@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}VoltSage - EV Range Predictor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold text-white mb-3">
+                <i class="fas fa-bolt me-3"></i>VoltSage
+            </h1>
+            <p class="lead text-white-50">
+                Predict your electric vehicle's range with precision using machine learning
+            </p>
+        </div>
+
+        <!-- Prediction Form Card -->
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-route me-2"></i>Range Prediction
+                </h2>
+                
+                <form id="predictionForm">
+                    <div class="row">
+                        <!-- Weather Conditions -->
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-cloud-sun me-2"></i>Weather Conditions
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="temperature" class="form-label">
+                                    <i class="fas fa-thermometer-half me-1"></i>Temperature (°C)
+                                </label>
+                                <input type="number" class="form-control" id="temperature" 
+                                       name="temperature" step="0.1" min="-40" max="50" 
+                                       placeholder="e.g., 20" required>
+                                <div class="form-text">Range: -40°C to 50°C</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="wind_speed" class="form-label">
+                                    <i class="fas fa-wind me-1"></i>Wind Speed (km/h)
+                                </label>
+                                <input type="number" class="form-control" id="wind_speed" 
+                                       name="wind_speed" step="0.1" min="0" max="100" 
+                                       placeholder="e.g., 10" required>
+                                <div class="form-text">Range: 0 to 100 km/h</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Driving Factors -->
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-car me-2"></i>Driving Factors
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="driving_style" class="form-label">
+                                    <i class="fas fa-tachometer-alt me-1"></i>Driving Style
+                                </label>
+                                <select class="form-select" id="driving_style" name="driving_style" required>
+                                    <option value="">Select driving style...</option>
+                                    <option value="eco">🌱 Eco (Most Efficient)</option>
+                                    <option value="moderate">⚖️ Moderate (Balanced)</option>
+                                    <option value="aggressive">🏎️ Aggressive (Sport Mode)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="cargo_weight" class="form-label">
+                                    <i class="fas fa-weight-hanging me-1"></i>Cargo Weight (kg)
+                                </label>
+                                <input type="number" class="form-control" id="cargo_weight" 
+                                       name="cargo_weight" step="0.1" min="0" max="1000" 
+                                       placeholder="e.g., 100" required>
+                                <div class="form-text">Range: 0 to 1000 kg</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-magic me-2"></i>Predict Range
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Loading Spinner -->
+                <div class="loading text-center mt-4" id="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing your inputs...</p>
+                </div>
+                
+                <!-- Results -->
+                <div id="results" class="mt-4" style="display: none;">
+                    <div class="result-card">
+                        <h3 class="mb-3">
+                            <i class="fas fa-battery-three-quarters me-2"></i>Predicted Range
+                        </h3>
+                        <div class="display-4 fw-bold mb-2" id="predictedRange">0</div>
+                        <p class="mb-0">kilometers</p>
+                    </div>
+                    
+                    <!-- Factors Breakdown -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-info-circle me-2"></i>Input Summary
+                                    </h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><strong>Temperature:</strong> <span id="resultTemp">-</span>°C</li>
+                                        <li><strong>Wind Speed:</strong> <span id="resultWind">-</span> km/h</li>
+                                        <li><strong>Driving Style:</strong> <span id="resultStyle">-</span></li>
+                                        <li><strong>Cargo Weight:</strong> <span id="resultCargo">-</span> kg</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-lightbulb me-2"></i>Tips
+                                    </h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><i class="fas fa-check text-success me-1"></i>Use eco mode for longer range</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>Reduce cargo weight when possible</li>
+                                        <li><i class="fas fa-check text-success me-1"></i>Avoid high winds and extreme temperatures</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="row mt-5">
+            <div class="col-md-4 text-center mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h5>Machine Learning</h5>
+                        <p>Advanced algorithms trained on real-world EV data for accurate predictions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-cloud-sun"></i>
+                        </div>
+                        <h5>Weather Aware</h5>
+                        <p>Considers temperature, wind speed, and other environmental factors.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5>Real-time API</h5>
+                        <p>RESTful API for easy integration with your applications.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Show loading
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    
+    // Get form data
+    const formData = new FormData(this);
+    const data = {
+        temperature: parseFloat(formData.get('temperature')),
+        wind_speed: parseFloat(formData.get('wind_speed')),
+        driving_style: formData.get('driving_style'),
+        cargo_weight: parseFloat(formData.get('cargo_weight'))
+    };
+    
+    try {
+        const response = await fetch('/api/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Update results
+            document.getElementById('predictedRange').textContent = result.predicted_range_km;
+            document.getElementById('resultTemp').textContent = result.temperature;
+            document.getElementById('resultWind').textContent = result.wind_speed;
+            document.getElementById('resultStyle').textContent = result.driving_style;
+            document.getElementById('resultCargo').textContent = result.cargo_weight;
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        // Hide loading
+        document.getElementById('loading').style.display = 'none';
+    }
+});
+</script>
+{% endblock %} 

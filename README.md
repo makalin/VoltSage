@@ -29,8 +29,8 @@ VoltSage is a tool that estimates an electric vehicle’s (EV) range based on we
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/techdrivex/VoltSage.git
-   cd voltsage
+   git clone https://github.com/makalin/VoltSage.git
+   cd VoltSage
    ```
 2. Create a virtual environment:
    ```bash
@@ -94,7 +94,7 @@ We welcome contributions! To get started:
 4. Push to your fork: `git push origin feature/your-feature`.
 5. Open a pull request.
 
-Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) and check the [Issues](https://github.com/your-username/voltsage/issues) for tasks.
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) and check the [Issues](https://github.com/makalin/VoltSage/issues) for tasks.
 
 ## License
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

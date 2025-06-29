@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}VoltSage - Prediction History{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-white mb-3">
+                <i class="fas fa-history me-3"></i>Prediction History
+            </h1>
+            <p class="lead text-white-50">
+                View your past EV range predictions and track your usage patterns
+            </p>
+        </div>
+
+        <!-- History Card -->
+        <div class="card">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Predictions
+                    </h3>
+                    <button class="btn btn-outline-primary" onclick="refreshHistory()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div class="text-center" id="historyLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading prediction history...</p>
+                </div>
+                
+                <!-- History Table -->
+                <div id="historyTable" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-calendar me-1"></i>Date</th>
+                                    <th><i class="fas fa-thermometer-half me-1"></i>Temperature</th>
+                                    <th><i class="fas fa-wind me-1"></i>Wind Speed</th>
+                                    <th><i class="fas fa-tachometer-alt me-1"></i>Driving Style</th>
+                                    <th><i class="fas fa-weight-hanging me-1"></i>Cargo Weight</th>
+                                    <th><i class="fas fa-route me-1"></i>Predicted Range</th>
+                                    <th><i class="fas fa-chart-bar me-1"></i>Efficiency</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="emptyState" class="text-center py-5" style="display: none;">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No predictions yet</h5>
+                        <p class="text-muted">Make your first prediction to see it here!</p>
+                        <a href="/" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Make Prediction
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Card -->
+        <div class="card mt-4">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">
+                    <i class="fas fa-chart-pie me-2"></i>Statistics
+                </h4>
+                <div class="row" id="statistics">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title" id="totalPredictions">0</h5>
+                                <p class="card-text">Total Predictions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title" id="avgRange">0</h5>
+                                <p class="card-text">Avg Range (km)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h5 class="card-title" id="maxRange">0</h5>
+                                <p class="card-text">Max Range (km)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h5 class="card-title" id="minRange">0</h5>
+                                <p class="card-text">Min Range (km)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load history when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadHistory();
+});
+
+async function loadHistory() {
+    try {
+        const response = await fetch('/api/history');
+        const history = await response.json();
+        
+        if (response.ok) {
+            displayHistory(history);
+            updateStatistics(history);
+        } else {
+            console.error('Error loading history:', history.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    } finally {
+        document.getElementById('historyLoading').style.display = 'none';
+        document.getElementById('historyTable').style.display = 'block';
+    }
+}
+
+function displayHistory(history) {
+    const tableBody = document.getElementById('historyTableBody');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (history.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    tableBody.innerHTML = '';
+    
+    history.forEach(prediction => {
+        const row = document.createElement('tr');
+        
+        // Format date
+        const date = new Date(prediction.created_at);
+        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        
+        // Calculate efficiency (higher is better)
+        const efficiency = calculateEfficiency(prediction);
+        const efficiencyClass = efficiency > 0.8 ? 'text-success' : efficiency > 0.6 ? 'text-warning' : 'text-danger';
+        
+        row.innerHTML = `
+            <td>${formattedDate}</td>
+            <td>${prediction.temperature}°C</td>
+            <td>${prediction.wind_speed} km/h</td>
+            <td>
+                <span class="badge bg-${getDrivingStyleColor(prediction.driving_style)}">
+                    ${prediction.driving_style}
+                </span>
+            </td>
+            <td>${prediction.cargo_weight} kg</td>
+            <td><strong>${prediction.predicted_range.toFixed(1)} km</strong></td>
+            <td class="${efficiencyClass}">
+                <i class="fas fa-${efficiency > 0.8 ? 'arrow-up' : efficiency > 0.6 ? 'minus' : 'arrow-down'}"></i>
+                ${(efficiency * 100).toFixed(0)}%
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+function updateStatistics(history) {
+    if (history.length === 0) return;
+    
+    const ranges = history.map(p => p.predicted_range);
+    const avgRange = ranges.reduce((a, b) => a + b, 0) / ranges.length;
+    const maxRange = Math.max(...ranges);
+    const minRange = Math.min(...ranges);
+    
+    document.getElementById('totalPredictions').textContent = history.length;
+    document.getElementById('avgRange').textContent = avgRange.toFixed(1);
+    document.getElementById('maxRange').textContent = maxRange.toFixed(1);
+    document.getElementById('minRange').textContent = minRange.toFixed(1);
+}
+
+function calculateEfficiency(prediction) {
+    // Simple efficiency calculation based on factors
+    let efficiency = 1.0;
+    
+    // Temperature effect
+    if (prediction.temperature < 0 || prediction.temperature > 30) {
+        efficiency *= 0.9;
+    }
+    
+    // Wind effect
+    if (prediction.wind_speed > 20) {
+        efficiency *= 0.85;
+    }
+    
+    // Driving style effect
+    if (prediction.driving_style === 'aggressive') {
+        efficiency *= 0.75;
+    } else if (prediction.driving_style === 'eco') {
+        efficiency *= 1.15;
+    }
+    
+    // Cargo weight effect
+    if (prediction.cargo_weight > 200) {
+        efficiency *= 0.9;
+    }
+    
+    return Math.min(1.0, efficiency);
+}
+
+function getDrivingStyleColor(style) {
+    switch (style) {
+        case 'eco': return 'success';
+        case 'moderate': return 'primary';
+        case 'aggressive': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+function refreshHistory() {
+    document.getElementById('historyLoading').style.display = 'block';
+    document.getElementById('historyTable').style.display = 'none';
+    loadHistory();
+}
+</script>
+{% endblock %} 
